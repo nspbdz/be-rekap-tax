@@ -34,7 +34,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('v1')->group(function () {
-    Route::apiResource('attendances', AttendanceController::class);
+
+    Route::post('attendances', [AttendanceController::class, 'index']);
+    Route::post('attendances/store', [AttendanceController::class, 'store']);
+    Route::post('attendances/store-excel', [AttendanceController::class, 'storeByExcel']);
+    Route::post('attendances/detail', [AttendanceController::class, 'show']);
+    Route::post('attendances/update', [AttendanceController::class, 'update']);
 });
 
 

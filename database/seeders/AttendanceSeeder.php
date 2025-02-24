@@ -25,6 +25,7 @@ class AttendanceSeeder extends Seeder
             for ($i = 0; $i < 30; $i++) {
                 Attendance::create([
                     'taxpayer_id' => $taxpayer->id,
+                    'project_id' => rand(1, 3), // Menggunakan angka acak antara 1 - 4
                     'attendance_date' => now()->subDays($i),
                     'status' => $faker->randomElement(['1', '2', '3']),
                 ]);

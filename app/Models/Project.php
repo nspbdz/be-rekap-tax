@@ -8,4 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Project extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'description',
+    ];
+
+    /**
+     * Relasi ke Attendance.
+     */
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'project_id');
+    }
 }
