@@ -5,6 +5,7 @@ use App\Http\Controllers\HydraController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\UserRoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,12 @@ Route::prefix('v1')->group(function () {
     // Route::post('attendances/detail', [AttendanceController::class, 'show']);
     Route::post('attendances/detail', [AttendanceController::class, 'getAttendance']);
     Route::post('attendances/update', [AttendanceController::class, 'updateAttendance']);
+
+    Route::post('projects', [ProjectController::class, 'index']);
+    Route::post('projects/store', [ProjectController::class, 'store']);
+    Route::post('projects/update', [ProjectController::class, 'update']);
+    Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+
 });
 
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('project_name', 100);
             $table->string('project_location', 255);
             $table->timestamps();
+            $table->softDeletes(); // Tambahkan Soft Deletes
         });
     }
 
