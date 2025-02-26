@@ -24,6 +24,7 @@ class TaxpayerSeeder extends Seeder
                 'nik' => $faker->numerify('################'),
                 'tku_id' => $faker->uuid(),
                 'name' => $faker->name(),
+                'project_id' => rand(1, 3), // Menggunakan angka acak antara 1 - 4
                 'ktp_photo' => $faker->imageUrl(200, 300, 'people'),
                 'status_ptkp' => $faker->randomElement(['K/0', 'TK/0', 'K/1']),
                 'facility' => $faker->randomElement(['N/A', 'Special', 'Regular']),

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('ktp_photo')->nullable(); // URL Foto KTP
             $table->string('status_ptkp', 10);
             $table->string('facility', 10)->nullable();
+            $table->unsignedBigInteger('project_id');
             $table->timestamps();
         });
     }

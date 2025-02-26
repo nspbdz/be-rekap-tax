@@ -6,6 +6,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\WorkerController;
 use App\Http\Controllers\UserRoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,11 @@ Route::prefix('v1')->group(function () {
     Route::post('projects/store', [ProjectController::class, 'store']);
     Route::post('projects/update', [ProjectController::class, 'update']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+
+    Route::post('workers', [WorkerController::class, 'index']);
+    Route::post('workers/store', [WorkerController::class, 'store']);
+    Route::post('workers/update', [WorkerController::class, 'update']);
+    Route::delete('/workers/{id}', [WorkerController::class, 'destroy']);
 
 });
 
