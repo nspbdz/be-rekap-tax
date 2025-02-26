@@ -11,9 +11,113 @@ use Illuminate\Http\Response;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\AttendanceImport;
+use App\Exports\AttendanceExport;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use DB;
 
 class AttendanceController extends Controller
 {
+
+    public function updateAttendance(Request $request)
+    {
+        // return $request;
+
+        // Validasi data yang diterima
+        // $validated = $request->validate([
+        //     'data' => 'required|array',
+        //     'data.*.taxpayer_id' => 'required|string',
+        //     'data.*.attendance_date' => 'required|date',
+        //     'data.*.status' => 'required|string|in:Hadir,Izin',
+        // ]);
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($request['data'] as $record) {
+                Attendance::updateOrCreate(
+                    [
+                        'taxpayer_id' => $record['taxpayer_id'],
+                        'attendance_date' => $record['attendance_date'],
+                    ],
+                    [
+                        'status' => $record['status'],
+                    ]
+                );
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Data kehadiran berhasil diperbarui'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal memperbarui data', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+
+    public function getAttendance(Request $request)
+    {
+        // return $request->nik;
+        // Validasi input
+        $request->validate([
+            'month' => 'required|digits:2',
+            'year' => 'required|digits:4',
+            'project_id' => 'required|integer',
+            // 'id' => 'nullable|string', // Tambahkan validasi untuk NIK (opsional)
+        ]);
+    
+        // Query kehadiran
+        $attendances = Attendance::whereYear('attendance_date', $request->year)
+            ->whereMonth('attendance_date', $request->month)
+            ->where('project_id', $request->project_id)
+            ->when($request->id, function ($query) use ($request) {
+                return $query->whereHas('taxpayer', function ($taxpayerQuery) use ($request) {
+                    $taxpayerQuery->where('id', $request->id);
+                });
+            })
+            ->with(['taxpayer', 'project'])
+            ->get();
+    
+        if ($attendances->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
+    
+        // Format response
+        $formattedData = $attendances->groupBy('taxpayer_id')->map(function ($records) {
+            return [
+                'id' => $records->first()->taxpayer_id,
+                'nik' => $records->first()->taxpayer->nik,
+                'nama' => $records->first()->taxpayer->name,
+                'kehadiran' => $records->map(function ($record) {
+                    return [
+                        'tanggal' => $record->attendance_date,
+                        'status' => $record->status
+                    ];
+                })->values()
+            ];
+        })->values();
+    
+        return response()->json([
+            'success' => true,
+            'data' => $formattedData
+        ]);
+    }
+    
+
+    public function exportAttendance(Request $request): BinaryFileResponse
+    {
+
+        $projectId = $request->query('pr');
+        $attendanceMonth = $request->query('attd');
+        [$year, $month] = explode('-', $attendanceMonth);
+
+        $fileName = "attendance_{$year}_{$month}_project_{$projectId}.xlsx";
+        
+        return Excel::download(new AttendanceExport($year, $month, $projectId), $fileName);
+    }
+
 
     public function storeByExcel(Request $request)
     {
