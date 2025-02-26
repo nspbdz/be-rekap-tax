@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProjectController extends Controller
 {
+
+    public function dropdown(Request $request)
+    {
+        $query = Project::get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Project Dropdown Get successfully',
+            'data' => $query
+        ], 200);
+    }
+
     public function index(Request $request)
     {
         $per_page = $request->per_page ?? null;
@@ -46,7 +58,7 @@ class ProjectController extends Controller
                 'success' => true,
                 'message' => 'Project created successfully',
                 'data' => $project
-            ], 201);
+            ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

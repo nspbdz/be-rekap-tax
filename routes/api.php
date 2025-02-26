@@ -42,6 +42,8 @@ Route::prefix('v1')->group(function () {
     Route::post('projects/store', [ProjectController::class, 'store']);
     Route::post('projects/update', [ProjectController::class, 'update']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+    Route::post('projects/dropdown', [ProjectController::class, 'dropdown']);
+
 
     Route::post('workers', [WorkerController::class, 'index']);
     Route::post('workers/store', [WorkerController::class, 'store']);
