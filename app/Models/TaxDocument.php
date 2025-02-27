@@ -9,6 +9,13 @@ class TaxDocument extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'document_type',
+        'document_number',
+        'document_date',
+    ];
+
+
     public function taxTransactions()
     {
         return $this->hasMany(TaxTransaction::class, 'tax_document_id');

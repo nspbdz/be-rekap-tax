@@ -9,6 +9,10 @@ class TaxCutter extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'tku_id',
+    ];
+
     public function taxTransactions()
     {
         return $this->hasMany(TaxTransaction::class, 'tax_cutter_id');
