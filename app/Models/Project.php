@@ -19,4 +19,10 @@ class Project extends Model
     {
         return $this->hasMany(Attendance::class, 'project_id');
     }
+
+    public function taxTransactions()
+    {
+        return $this->hasMany(TaxTransaction::class, 'project_id');
+    }
+
 }

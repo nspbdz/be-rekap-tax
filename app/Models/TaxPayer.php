@@ -21,4 +21,9 @@ class TaxPayer extends Model
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    public function taxTransactions()
+    {
+        return $this->hasMany(TaxTransaction::class, 'taxpayer_id');
+    }
+
 }

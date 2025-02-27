@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
 
     Route::post('workers', [WorkerController::class, 'index']);
     Route::post('workers/store', [WorkerController::class, 'store']);
+    Route::post('workers/detail', [WorkerController::class, 'detail']);
     Route::post('workers/update', [WorkerController::class, 'update']);
     Route::delete('/workers/{id}', [WorkerController::class, 'destroy']);
 
