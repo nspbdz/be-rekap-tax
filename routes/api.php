@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
     Route::post('workers/detail', [WorkerController::class, 'detail']);
     Route::post('workers/update', [WorkerController::class, 'update']);
     Route::delete('/workers/{id}', [WorkerController::class, 'destroy']);
+    Route::post('workers/check-nik', [WorkerController::class, 'checkNikExists']);
 
 });
 

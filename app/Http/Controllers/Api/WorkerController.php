@@ -13,27 +13,81 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 
 class WorkerController extends Controller
 {
-    public function index(Request $request)
+
+    public function checkNikExists(Request $request)
     {
-        $per_page = $request->per_page ?? null;
+        try {
+            $request->validate([
+                'nik' => 'required|string',
+            ]);
 
-        $query = TaxPayer::with('project')
-            ->select('tax_payers.*')
-            ->when($request->filled('nik'), function ($q) use ($request) {
-                $q->where('nik', 'like', '%' . $request->nik . '%');
-            })
-            ->when($request->filled('project_id'), function ($q) use ($request) {
-                $q->where('project_id', 'like', '%' . $request->project_id . '%');
-            })
-            ->groupBy('id')
-            ->orderByDesc('created_at');
+            $nikExists = TaxPayer::where('nik', $request->nik)->exists();
 
-        return response()->json($query->paginate($request->get('per_page', $per_page)));
+            if ($nikExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'NIK sudah terdaftar',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'NIK tersedia',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan, silakan coba lagi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
+    public function index(Request $request)
+{
+    $per_page = $request->per_page ?? null;
+
+    $query = TaxTransaction::with('taxpayer.project', 'project') // Memanggil taxpayer dan project
+        ->select('tax_transactions.*')
+        ->when($request->filled('nik'), function ($q) use ($request) {
+            $q->whereHas('taxpayer', function ($query) use ($request) {
+                $query->where('nik', 'like', '%' . $request->nik . '%');
+            });
+        })
+        ->when($request->filled('project_id'), function ($q) use ($request) {
+            $q->whereHas('taxpayer.project', function ($query) use ($request) {
+                $query->where('id', 'like', '%' . $request->project_id . '%');
+            });
+        })
+        ->groupBy('id')
+        ->orderByDesc('created_at');
+
+    return response()->json($query->paginate($request->get('per_page', $per_page)));
+}
+
+
+    // public function index(Request $request)
+    // {
+    //     $per_page = $request->per_page ?? null;
+
+    //     $query = TaxPayer::with('project')
+    //         ->select('tax_payers.*')
+    //         ->when($request->filled('nik'), function ($q) use ($request) {
+    //             $q->where('nik', 'like', '%' . $request->nik . '%');
+    //         })
+    //         ->when($request->filled('project_id'), function ($q) use ($request) {
+    //             $q->where('project_id', 'like', '%' . $request->project_id . '%');
+    //         })
+    //         ->groupBy('id')
+    //         ->orderByDesc('created_at');
+
+    //     return response()->json($query->paginate($request->get('per_page', $per_page)));
+    // }
 
 
     // Menampilkan detail kehadiran
@@ -52,7 +106,7 @@ class WorkerController extends Controller
                 'taxCutter', 
                 'taxDocument', 
                 'project'
-            ])->where("taxpayer_id",  $request->id)
+            ])->where("id",  $request->id)
             ->first();
             return response()->json([
                 'success' => true,
@@ -76,26 +130,27 @@ class WorkerController extends Controller
 
     public function store(Request $request)
 {
+
     $validator = Validator::make($request->all(), [
-        // 'npwp' => 'required|string|max:20',
-        // 'nik' => 'required|string|max:16',
-        // 'tku_id' => 'required|uuid',
-        // 'name' => 'required|string|max:100',
-        // 'ktp_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Maks 2MB
-        // 'status_ptkp' => 'required|string|max:10',
-        // 'facility' => 'required|string|max:50',
-        // // 'project_id' => 'required|integer',
-        // 'tax_period' => 'required|integer',
-        // 'tax_year' => 'required|integer|min:1900|max:' . date('Y'),
-        // 'tax_object_code' => 'required|string|max:20',
-        // 'income' => 'required|numeric',
-        // 'deemed' => 'required|numeric',
-        // 'rate' => 'required|numeric',
-        // 'document_type' => 'required|string|max:50',
-        // 'document_number' => 'required|string|max:50',
-        // 'document_date' => 'nullable|date',
-        // 'tax_cutter_id' => 'required|uuid',
-        // 'deduction_date' => 'required|date',
+        'npwp' => 'required|string|max:20',
+        'nik' => 'required|string|max:16',
+        'tku_id' => 'required',
+        'name' => 'required|string|max:100',
+        'ktp_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Maks 2MB
+        'status_ptkp' => 'required|string|max:10',
+        'facility' => 'required|string|max:50',
+        'project_id' => 'required|integer',
+        'tax_period' => 'required|integer',
+        'tax_year' => 'required|integer|min:1900|max:' . date('Y'),
+        'tax_object_code' => 'required|string|max:20',
+        'income' => 'required|numeric',
+        'deemed' => 'required|numeric',
+        'rate' => 'required|numeric',
+        'document_type' => 'required|string|max:50',
+        'document_number' => 'required|string|max:50',
+        'document_date' => 'nullable|date',
+        'tax_cutter_id' => 'required',
+        'deduction_date' => 'required|date',
     ]);
 
     if ($validator->fails()) {
@@ -152,7 +207,7 @@ class WorkerController extends Controller
         return response()->json([
             'message' => 'Data berhasil disimpan',
             'data' => $taxTransaction,
-        ], 201);
+        ], 200);
 
     } catch (\Exception $e) {
         DB::rollBack();
