@@ -121,27 +121,27 @@ class AttendanceController extends Controller
 
     public function storeByExcel(Request $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,csv',
-            'year' => 'required|integer',
-            'month' => 'required|integer|min:1|max:12',
-            'project_id' => 'required|integer',
-        ]);
+        // $request->validate([
+        //     'file' => 'required|file|mimes:xlsx,csv',
+        //     'year' => 'required|integer',
+        //     'month' => 'required|integer|min:1|max:12',
+        //     'project_id' => 'required|integer',
+        // ]);
 
-       // Ambil nilai dari request
-    $year = $request->input('year');
-    $month = $request->input('month');
-    $projectId = $request->input('project_id');
+        // Ambil nilai dari request
+        $year = $request->input('year');
+        $month = $request->input('month');
+        $projectId = $request->input('project_id');
 
-    // Buat instance dengan parameter yang diperlukan
-    $import = new AttendanceImport($year, $month, $projectId);
-    Excel::import($import, $request->file('file'));
+        // Buat instance dengan parameter yang diperlukan
+        $import = new AttendanceImport($year, $month, $projectId);
+        Excel::import($import, $request->file('file'));
 
-    // Mengembalikan data hasil parsing ke Postman
-    return response()->json([
-        'message' => 'File processed successfully',
-        'imported_data' => $import->importedData
-    ], 200);
+        // Mengembalikan data hasil parsing ke Postman
+        return response()->json([
+            'message' => 'File processed successfully',
+            'imported_data' => $import->importedData
+        ], 200);
     
     //    $data= Excel::import(new AttendanceImport($request->year, $request->month, $request->project_id), $request->file('file'));
     //    return response()->json($data);
@@ -188,8 +188,8 @@ class AttendanceController extends Controller
                 }
             })
             ->whereHas('project', function ($q) use ($request) {
-                if ($request->filled('project_name')) {
-                    $q->where('project_name', 'like', '%' . $request->project_name . '%');
+                if ($request->filled('project_id')) {
+                    $q->where('project_id', '=', $request->project_id );
                 }
             })
             ->groupBy('taxpayer_id') // Hindari duplikasi taxpayer
@@ -201,32 +201,51 @@ class AttendanceController extends Controller
 
     // Menyimpan data kehadiran baru
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            // 'taxpayer_id' => 'required|exists:tax_payers,id',
-            'attendance_date' => 'required|date',
-            'status' => 'required|in:1,2,3',
-        ]);
+{
+    $data = $request->validate([
+        'attendance_date' => 'required|date',
+        'status' => 'required|in:1,2,3',
+    ]);
 
-        $taxpayer = TaxPayer::where('nik', '=' , $request->nik)->first(); // Mencari taxpayer pertama
+    $taxpayer = TaxPayer::where('nik', $request->nik)->first();
 
-        if (!$taxpayer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Taxpayer not found'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        $data['taxpayer_id']=$taxpayer->id;
-
-        $attendance = Attendance::create($data);
-
+    if (!$taxpayer) {
         return response()->json([
-            'success' => true,
-            'message' => 'Attendance created successfully',
-            'data' => new AttendanceResource($attendance)
-        ], Response::HTTP_CREATED);
+            'success' => false,
+            'message' => 'Taxpayer not found'
+        ], Response::HTTP_NOT_FOUND);
     }
+
+    // Ambil tahun dan bulan dari attendance_date
+    $year = date('Y', strtotime($request->attendance_date));
+    $month = date('m', strtotime($request->attendance_date));
+
+    // Cek apakah sudah ada entri dengan taxpayer_id, bulan, dan tahun yang sama
+    $existingAttendance = Attendance::where('taxpayer_id', $taxpayer->id)
+        ->whereYear('attendance_date', $year)
+        ->whereMonth('attendance_date', $month)
+        ->exists();
+
+        return $existingAttendance;
+
+    if ($existingAttendance) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Attendance for this taxpayer in the same month and year already exists'
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    $data['taxpayer_id'] = $taxpayer->id;
+
+    // $attendance = Attendance::create($data);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Attendance created successfully',
+        // 'data' => new AttendanceResource($attendance)
+    ], Response::HTTP_CREATED);
+}
+
 
     // Menampilkan detail kehadiran
     public function show(Request $request)
