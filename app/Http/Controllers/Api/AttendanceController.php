@@ -61,14 +61,14 @@ class AttendanceController extends Controller
         $request->validate([
             'month' => 'required|digits:2',
             'year' => 'required|digits:4',
-            'project_id' => 'required|integer',
+            // 'project_id' => 'required|integer',
             // 'id' => 'nullable|string', // Tambahkan validasi untuk NIK (opsional)
         ]);
     
         // Query kehadiran
         $attendances = Attendance::whereYear('attendance_date', $request->year)
             ->whereMonth('attendance_date', $request->month)
-            ->where('project_id', $request->project_id)
+            // ->where('project_id', $request->project_id)
             ->when($request->id, function ($query) use ($request) {
                 return $query->whereHas('taxpayer', function ($taxpayerQuery) use ($request) {
                     $taxpayerQuery->where('id', $request->id);
@@ -189,7 +189,7 @@ class AttendanceController extends Controller
             })
             ->whereHas('project', function ($q) use ($request) {
                 if ($request->filled('project_id')) {
-                    $q->where('project_id', '=', $request->project_id );
+                    $q->where('id', '=', $request->project_id );
                 }
             })
             ->groupBy('taxpayer_id') // Hindari duplikasi taxpayer
@@ -250,7 +250,7 @@ class AttendanceController extends Controller
     // Menampilkan detail kehadiran
     public function show(Request $request)
     {
-        $data = Attendance::with('taxpayer', 'project')->find($request->id);
+        $data = Attendance::with('taxpayer', 'project')->where('taxpayer_id', '=', $request->id)->first();
         return response()->json([
             'success' => true,
             'message' => 'Attendance details',
