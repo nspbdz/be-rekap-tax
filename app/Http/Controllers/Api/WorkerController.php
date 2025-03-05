@@ -132,9 +132,8 @@ class WorkerController extends Controller
 {
 
     $validator = Validator::make($request->all(), [
-        'npwp' => 'required|string|max:20',
-        'nik' => 'required|string|max:16',
-        'tku_id' => 'required',
+       'nik' => 'required|string|max:16',
+        'tku_id' => 'required|string|max:105',
         'name' => 'required|string|max:100',
         'ktp_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Maks 2MB
         'status_ptkp' => 'required|string|max:10',
@@ -147,9 +146,9 @@ class WorkerController extends Controller
         'deemed' => 'required|numeric',
         'rate' => 'required|numeric',
         'document_type' => 'required|string|max:50',
-        'document_number' => 'required|string|max:50',
+        'document_number' => 'required|string|max:50|unique:tax_documents,document_number',
         'document_date' => 'nullable|date',
-        'tax_cutter_id' => 'required',
+        'tax_cutter_id' => 'required|string|max:105|exists:tax_cutters,tku_id',
         'deduction_date' => 'required|date',
     ]);
 
@@ -157,15 +156,23 @@ class WorkerController extends Controller
         return response()->json(['errors' => $validator->errors()], 422);
     }
 
+    // if ($validator->fails()) {
+    //     return response()->json([
+    //         'status' => 500, // Ubah ke 500 Internal Server Error
+    //         'message' => 'Validasi gagal',
+    //         'errors' => $validator->errors(),
+    //     ], 500);
+    // }
+
     try {
         DB::beginTransaction();
 
         // Simpan KTP Foto sebagai Base64
         $ktpPhoto = base64_encode(file_get_contents($request->file('ktp_photo')->getRealPath()));
 
+       
         // Buat TaxPayer
         $taxPayer = TaxPayer::create([
-            'npwp' => $request->npwp,
             'nik' => $request->nik,
             'tku_id' => $request->tku_id,
             'name' => $request->name,
@@ -219,7 +226,6 @@ class WorkerController extends Controller
     {
 
         $dataTaxPayer = [
-            'npwp' => $request->npwp,
             'nik' => $request->nik,
             'tku_id' => $request->tku_id,
             'name' => $request->name,

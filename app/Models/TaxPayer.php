@@ -9,7 +9,7 @@ class TaxPayer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['npwp', 'nik', 'tku_id', 'name', 'ktp_photo', 'status_ptkp', 'facility', 'project_id'];
+    protected $fillable = ['nik', 'tku_id', 'name', 'ktp_photo', 'status_ptkp', 'facility', 'project_id'];
 
     public function attendances()
     {

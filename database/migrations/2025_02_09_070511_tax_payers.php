@@ -15,7 +15,6 @@ return new class extends Migration
     {
         Schema::create('tax_payers', function (Blueprint $table) {
             $table->id();
-            $table->string('npwp', 20)->unique();
             $table->string('nik', 16)->unique();
             $table->string('tku_id', 105)->unique();
             $table->string('name', 100);

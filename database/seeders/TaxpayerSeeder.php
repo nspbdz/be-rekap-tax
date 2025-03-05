@@ -20,7 +20,6 @@ class TaxpayerSeeder extends Seeder
 
         for ($i = 1; $i <= 10; $i++) {
             TaxPayer::create([
-                'npwp' => $faker->numerify('################'),
                 'nik' => $faker->numerify('################'),
                 'tku_id' => $faker->uuid(),
                 'name' => $faker->name(),
