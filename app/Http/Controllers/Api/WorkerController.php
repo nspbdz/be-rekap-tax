@@ -148,7 +148,7 @@ class WorkerController extends Controller
         'document_type' => 'required|string|max:50',
         'document_number' => 'required|string|max:50|unique:tax_documents,document_number',
         'document_date' => 'nullable|date',
-        'tax_cutter_id' => 'required|string|max:105|exists:tax_cutters,tku_id',
+        'tax_cutter_id' => 'required|string|max:105',
         'deduction_date' => 'required|date',
     ]);
 

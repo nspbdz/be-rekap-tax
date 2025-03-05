@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('tax_cutters', function (Blueprint $table) {
             $table->id();
-            $table->string('tku_id', 105)->unique();
+            $table->string('tku_id', 105)->nullable();
             $table->timestamps();
         });
     }
