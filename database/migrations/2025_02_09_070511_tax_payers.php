@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('nik', 16)->unique();
             $table->string('tku_id', 105)->unique();
             $table->string('name', 100);
-            $table->string('ktp_photo')->nullable(); // URL Foto KTP
+            $table->text('ktp_photo')->nullable();
             $table->string('status_ptkp', 10);
             $table->string('facility', 10)->nullable();
             $table->unsignedBigInteger('project_id');

@@ -92,41 +92,46 @@ class WorkerController extends Controller
 
     // Menampilkan detail kehadiran
     public function detail(Request $request)
-    {
-        // return $request;
-        try {
-            // Validasi agar id tidak kosong
-            $request->validate([
-                'id' => 'required|integer|exists:tax_transactions,id'
-            ]);
+{
+    try {
+        // Validasi agar id tidak kosong
+        $request->validate([
+            'id' => 'required|integer|exists:tax_transactions,id'
+        ]);
 
-            // Ambil data dengan semua relasi
-            $data = TaxTransaction::with([
-                'taxpayer', 
-                'taxCutter', 
-                'taxDocument', 
-                'project'
-            ])->where("id",  $request->id)
-            ->first();
-            return response()->json([
-                'success' => true,
-                'message' => 'Tax Transaction retrieved successfully',
-                'data' => $data
-            ], 200);
-            
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tax Transaction not found',
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve Tax Transaction',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        // Ambil data dengan semua relasi
+        $data = TaxTransaction::with([
+            'taxpayer', 
+            'taxCutter', 
+            'taxDocument', 
+            'project'
+        ])->where("id", $request->id)
+        ->first();
+
+        //  if ($data && $data->taxpayer && $data->taxpayer->ktp_photo) {
+        //     $data->taxpayer->ktp_photo_urls = "data:image/jpeg;base64," . $data->taxpayer->ktp_photo;
+        // }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax Transaction retrieved successfully',
+            'data' => $data
+        ], 200);
+        
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Tax Transaction not found',
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve Tax Transaction',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function store(Request $request)
 {
@@ -156,19 +161,15 @@ class WorkerController extends Controller
         return response()->json(['errors' => $validator->errors()], 422);
     }
 
-    // if ($validator->fails()) {
-    //     return response()->json([
-    //         'status' => 500, // Ubah ke 500 Internal Server Error
-    //         'message' => 'Validasi gagal',
-    //         'errors' => $validator->errors(),
-    //     ], 500);
-    // }
-
     try {
         DB::beginTransaction();
 
         // Simpan KTP Foto sebagai Base64
-        $ktpPhoto = base64_encode(file_get_contents($request->file('ktp_photo')->getRealPath()));
+        // $ktpPhoto = base64_encode(file_get_contents($request->file('ktp_photo')->getRealPath()));
+
+        $file = $request->file('ktp_photo');
+        $mimeType = $file->getMimeType();
+        $ktpPhoto = "data:$mimeType;base64," . base64_encode(file_get_contents($file->getRealPath()));
 
        
         // Buat TaxPayer
@@ -222,60 +223,98 @@ class WorkerController extends Controller
     }
 }
 
-    public function update(Request $request)
-    {
+public function update(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'nik' => 'required|string|max:16',
+        'tku_id' => 'required|string|max:105',
+        'name' => 'required|string|max:100',
+        'status_ptkp' => 'required|string|max:10',
+        'facility' => 'required|string|max:50',
+        'project_id' => 'required|integer',
+        'tax_period' => 'required|integer',
+        'tax_year' => 'required|integer|min:1900|max:' . date('Y'),
+        'tax_object_code' => 'required|string|max:20',
+        'income' => 'required|numeric',
+        'deemed' => 'required|numeric',
+        'rate' => 'required|numeric',
+        'document_type' => 'required|string|max:50',
+        'document_number' => 'required|string|max:50',
+        'document_date' => 'nullable|date',
+        'tax_cutter_id' => 'required|string|max:105',
+        'deduction_date' => 'required|date',
+        'ktp_photo' => 'nullable|file|mimes:jpg,png,jpeg|max:2048', // File KTP (Opsional)
+    ]);
 
-        $dataTaxPayer = [
-            'nik' => $request->nik,
-            'tku_id' => $request->tku_id,
-            'name' => $request->name,
-            'ktp_photo' => $request->ktp_photo,
-            'status_ptkp' => $request->status_ptkp,
-            'facility' => $request->facility,
-            'project_id' => $request->project_id, // Pastikan ada nilai
-        ];
-        
-        $taxPayer = TaxPayer::create($dataTaxPayer);
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
 
-        $dataTaxCutter = [
-            'tku_id' => $request->tax_cutter_id,
-        ];
+    $taxPayer = TaxPayer::where('nik', $request->nik)->first();
 
-        $taxCutter = TaxCutter::create($dataTaxCutter);
+    if (!$taxPayer) {
+        return response()->json(['error' => 'Data tidak ditemukan'], 404);
+    }
 
-        $dataTaxDocument = [
+    // Jika ada file baru diunggah, maka update
+    if ($request->hasFile('file')) {
+        // Hapus file lama jika ada
+        if ($taxPayer->ktp_photo) {
+            Storage::disk('public')->delete($taxPayer->ktp_photo);
+        }
+        // Simpan file baru
+        $ktpPath = $request->file('file')->store('file', 'public');
+    } else {
+        // Gunakan file lama jika tidak ada file baru
+        $ktpPath = $taxPayer->ktp_photo;
+    }
+
+    // Update Data TaxPayer
+    $taxPayer->update([
+        'nik' => $request->nik,
+        'tku_id' => $request->tku_id,
+        'name' => $request->name,
+        'ktp_photo' => $ktpPath,
+        'status_ptkp' => $request->status_ptkp,
+        'facility' => $request->facility,
+        'project_id' => $request->project_id,
+    ]);
+
+    // Update atau Buat TaxCutter
+    $taxCutter = TaxCutter::updateOrCreate(
+        ['tku_id' => $request->tax_cutter_id],
+        ['tku_id' => $request->tax_cutter_id]
+    );
+
+    // Update atau Buat TaxDocument
+    $document = TaxDocument::updateOrCreate(
+        ['document_number' => $request->document_number],
+        [
             'document_type' => $request->document_type,
             'document_number' => $request->document_number,
             'document_date' => $request->document_date,
-        ];
+        ]
+    );
 
-        $document = TaxDocument::create($dataTaxDocument);
+    // Update atau Buat TaxTransaction
+    TaxTransaction::updateOrCreate(
+        ['taxpayer_id' => $taxPayer->id],
+        [
+            'tax_cutter_id' => $taxCutter->id,
+            'tax_document_id' => $document->id,
+            'project_id' => $request->project_id,
+            'tax_period' => $request->tax_period,
+            'tax_year' => $request->tax_year,
+            'tax_object_code' => $request->tax_object_code,
+            'income' => $request->income,
+            'deemed' => $request->deemed,
+            'rate' => $request->rate,
+            'deduction_date' => $request->deduction_date,
+        ]
+    );
 
-
-        $dataTaxDocument = [
-            'taxpayer_id'=> $taxPayer->id,
-            'tax_cutter_id'=> $taxCutter->id,
-            'tax_document_id'=> $document->id,
-            'project_id'=> $request->project_id,
-            'tax_period'=> $request->tax_period,
-            'tax_year'=> $request->tax_year,
-            'tax_object_code'=> $request->tax_object_code,
-            'income'=> $request->income,
-            'deemed'=> $request->deemed,
-            'rate'=> $request->rate,
-            'deduction_date'=> $request->deduction_date,
-        ];
-
-        // if ($request->hasFile('file')) {
-        //     if ($worker->file) {
-        //         Storage::disk('public')->delete($worker->file);
-        //     }
-        //     $data['file'] = $request->file('file')->store('files', 'public');
-        // }
-
-        // $worker->update($data);
-        return response()->json(['message' => 'Worker updated successfully']);
-    }
+    return response()->json(['message' => 'Worker updated successfully', 'ktp_photo' => asset('storage/' . $ktpPath)]);
+}
 
 
 }
