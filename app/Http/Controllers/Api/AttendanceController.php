@@ -178,26 +178,69 @@ class AttendanceController extends Controller
     // }
 
     public function index(Request $request)
-    {
-        $per_page = $request->per_page ?? null;
+{
+    $per_page = $request->get('per_page', 10);
+    
+    // Ambil tahun dari request, jika kosong pakai tahun sekarang
+    $year = $request->filled('year') ? $request->year : date('Y');
 
-        $query = Attendance::with(['taxpayer', 'project'])
-            ->select('attendances.*') // Memilih semua kolom dari attendances
-            ->whereHas('taxpayer', function ($q) use ($request) {
-                if ($request->filled('nik')) {
-                    $q->where('nik', 'like', '%' . $request->nik . '%');
-                }
-            })
-            ->whereHas('project', function ($q) use ($request) {
-                if ($request->filled('project_id')) {
-                    $q->where('id', '=', $request->project_id );
-                }
-            })
-            ->groupBy('taxpayer_id') // Hindari duplikasi taxpayer
-            ->orderByDesc('created_at'); // Urutkan berdasarkan tanggal terbaru
+    $query = Attendance::with(['taxpayer', 'project'])
+        ->selectRaw('attendances.*, MONTH(attendance_date) as month, YEAR(attendance_date) as year')
+        ->whereHas('project', function ($q) use ($request) {
+            if ($request->filled('project_id')) {
+                $q->where('id', '=', $request->project_id);
+            }
+        });
 
-        return response()->json($query->paginate($request->get('per_page', $per_page)));
+    // Filter berdasarkan tahun
+    $query->whereYear('attendance_date', $year);
+
+    // Filter berdasarkan bulan jika diberikan
+    if ($request->filled('month')) {
+        $query->whereMonth('attendance_date', $request->month);
     }
+
+    // Pastikan hanya bulan yang berbeda dalam tahun yang sama
+    $query->groupBy('month', 'year', 'project_id') // Group berdasarkan bulan & project
+          ->orderBy('year', 'desc')
+          ->orderBy('month', 'desc');
+
+    return response()->json($query->paginate($per_page));
+}
+
+
+
+
+//     public function index(Request $request)
+// {
+//     $per_page = $request->per_page ?? null;
+
+//     $query = Attendance::with(['taxpayer', 'project'])
+//         ->select('attendances.*') // Memilih semua kolom dari attendances
+//         ->whereHas('taxpayer', function ($q) use ($request) {
+//             // Hapus query NIK, karena sudah diganti dengan attendance_date
+//         })
+//         ->whereHas('project', function ($q) use ($request) {
+//             if ($request->filled('project_id')) {
+//                 $q->where('id', '=', $request->project_id);
+//             }
+//         });
+
+//     // Filter berdasarkan bulan dan tahun attendance_date
+//     if ($request->filled('month')) {
+//         $query->whereMonth('attendance_date', $request->month);
+//     }
+
+//     if ($request->filled('year')) {
+//         $query->whereYear('attendance_date', $request->year);
+//     }
+
+//     $query->groupBy('project_id') // Hindari duplikasi taxpayer
+//         ->orderByDesc('created_at'); // Urutkan berdasarkan tanggal terbaru
+
+//     return response()->json($query->paginate($request->get('per_page', $per_page)));
+// }
+
 
 
     // Menyimpan data kehadiran baru

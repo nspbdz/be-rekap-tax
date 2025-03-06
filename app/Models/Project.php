@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes; // Tambahkan SoftDeletes
+    use SoftDeletes; // Tambahkan SoftDeletes
+    protected $dates = ['deleted_at']; // Menambahkan kolom deleted_at untuk soft delete
+
 
     protected $fillable = ['project_name', 'project_location'];
 
