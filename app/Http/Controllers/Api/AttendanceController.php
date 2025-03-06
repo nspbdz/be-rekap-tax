@@ -56,6 +56,7 @@ class AttendanceController extends Controller
 
     public function getAttendance(Request $request)
     {
+        // return $request;
         // return $request->nik;
         // Validasi input
         $request->validate([
@@ -258,6 +259,32 @@ class AttendanceController extends Controller
         ], Response::HTTP_OK);
     }
 
+    public function summaryAttendanceByMonth(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|digits:2',
+            'year' => 'required|digits:4',
+        ]);
+        
+            $attendances = Attendance::whereYear('attendance_date', $request->year)
+            ->whereMonth('attendance_date', $request->month)
+            ->when($request->id, function ($query) use ($request) {
+                return $query->whereHas('taxpayer', function ($taxpayerQuery) use ($request) {
+                    $taxpayerQuery->where('id', $request->id);
+                });
+            })
+            ->where('status', 1) // Ambil hanya yang statusnya 1 (hadir)
+            ->count(); // Hitung jumlahnya
+        
+        // return response()->json(['attendance_count' => $attendances]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Attendance details',
+            'data' => $attendances
+        ], Response::HTTP_OK);
+    
+    }
+
     // Memperbarui data kehadiran
     public function update(Request $request, Attendance $attendance)
     {
@@ -279,6 +306,7 @@ class AttendanceController extends Controller
     // Menghapus data kehadiran
     public function destroy(Attendance $attendance)
     {
+        
         $attendance->delete();
 
         return response()->json([

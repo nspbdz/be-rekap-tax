@@ -10,6 +10,7 @@ use App\Models\TaxTransaction;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Queue\Worker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -318,6 +319,17 @@ public function update(Request $request)
 
     return response()->json(['message' => 'Worker updated successfully', 'ktp_photo' => asset('storage/' . $ktpPath)]);
 }
+
+    public function destroy($id)
+    {
+        $data = TaxTransaction::find($id);
+        $data->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Attendance deleted successfully'
+        ]);
+    }
 
 
 }

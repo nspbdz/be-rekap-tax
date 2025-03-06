@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function () {
     Route::post('attendances/detail', [AttendanceController::class, 'getAttendance']);
     Route::post('attendances/update', [AttendanceController::class, 'updateAttendance']);
     Route::post('attendances/show', [AttendanceController::class, 'show']);
+    Route::post('attendances/summary-by-month', [AttendanceController::class, 'summaryAttendanceByMonth']);
+    Route::delete('attendances/{id}', [AttendanceController::class, 'destroy']);
 
     Route::post('projects', [ProjectController::class, 'index']);
     Route::post('projects/store', [ProjectController::class, 'store']);
@@ -52,6 +54,7 @@ Route::prefix('v1')->group(function () {
     Route::post('workers/update', [WorkerController::class, 'update']);
     Route::delete('/workers/{id}', [WorkerController::class, 'destroy']);
     Route::post('workers/check-nik', [WorkerController::class, 'checkNikExists']);
+    Route::delete('workers/{id}', [WorkerController::class, 'destroy']);
 
 });
 
