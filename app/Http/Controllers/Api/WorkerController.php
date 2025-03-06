@@ -170,7 +170,6 @@ class WorkerController extends Controller
         $file = $request->file('ktp_photo');
         $mimeType = $file->getMimeType();
         $ktpPhoto = "data:$mimeType;base64," . base64_encode(file_get_contents($file->getRealPath()));
-
        
         // Buat TaxPayer
         $taxPayer = TaxPayer::create([
@@ -263,7 +262,11 @@ public function update(Request $request)
             Storage::disk('public')->delete($taxPayer->ktp_photo);
         }
         // Simpan file baru
-        $ktpPath = $request->file('file')->store('file', 'public');
+        // $ktpPath = $request->file('file')->store('file', 'public');
+        $file = $request->file('file');
+        $mimeType = $file->getMimeType();
+        $ktpPath = "data:$mimeType;base64," . base64_encode(file_get_contents($file->getRealPath()));
+        
     } else {
         // Gunakan file lama jika tidak ada file baru
         $ktpPath = $taxPayer->ktp_photo;
